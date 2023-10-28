@@ -1,8 +1,7 @@
 import "./App.css";
 import { useEffect, useState, useCallback } from "react";
 
-const GITHUB_TOKEN =
-  "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";
+const GITHUB_TOKEN = "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";
 
 interface JsonData {
   total_count: number;
@@ -60,7 +59,7 @@ function searchUser() {
           resolve(users);
         } catch (error) {
           console.error("Error fetching data:", error);
-          reject(error);
+          reject([]);
         }
       }, time);
     });
