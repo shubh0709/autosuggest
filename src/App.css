@@ -1,6 +1,7 @@
 .App {
   text-align: center;
   width: 100vw;
+  padding-top: 2rem;
 }
 
 tr td {
@@ -9,5 +10,14 @@ tr td {
 }
 
 table {
+  margin: auto;
+}
+
+.tableStyle {
+  margin-top: 3rem;
+}
+
+h3 {
+  padding: 10px;
   margin: auto;
 }

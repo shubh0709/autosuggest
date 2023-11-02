@@ -1,86 +1,68 @@
 import "./App.css";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { JsonData, UserDetails } from "./types";
+import { searchUser } from "./api";
 
-interface JsonData {
-  total_count: number;
-  incomplete_results: boolean;
-  items: [
-    {
-      login: string;
-      id: number;
-      node_id: string;
-      avatar_url: string;
-      gravatar_id: string;
-      url: string;
-      html_url: string;
-      followers_url: string;
-      following_url: string;
-      gists_url: string;
-      starred_url: string;
-      subscriptions_url: string;
-      organizations_url: string;
-      repos_url: string;
-      events_url: string;
-      received_events_url: string;
-      type: string;
-      site_admin: boolean;
-      score: number;
-    }
-  ];
-}
-
-function searchUser() {
-  let timeout: NodeJS.Timeout;
-
-  return function (val: string, time: number) {
-    if (!val) {
-      return [];
-    }
-
-    return new Promise(async (resolve, reject) => {
-      if (timeout) {
-        clearTimeout(timeout);
-        // console.log("clearing timer");
-      }
-
-      timeout = setTimeout(async () => {
-        // console.log("fetch called");
-
-        try {
-          const data = await fetch(
-            `https://api.github.com/search/users?q=${val}&order=desc&sort=followers`,
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.REACT_APP_GITHUB_TOKEN}`,
-              },
-            }
-          );
-
-          const jsonData: JsonData = await data.json();
-          const users = jsonData.items.map((user) => user.login);
-          resolve(users);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          reject([]);
-        }
-      }, time);
-    });
-  };
-}
+const DEBOUNCE_TIME = 300;
 
 const fetchData = searchUser();
 
 export default function App() {
-  const [matchData, setMatchData] = useState<string[]>([]);
+  const [matchData, setMatchData] = useState<UserDetails[]>([]);
   const [inputVal, setInputVal] = useState<string>("");
+  const pageNumber = useRef(1);
+  const intersectionRef = useRef<IntersectionObserver>();
+  const [loading, setLoading] = useState(false);
+  const [customError, setCustomError] = useState("");
 
   const handleChange = useCallback(async (e: any) => {
     const val = e.target.value;
     // console.log("val is: ", val);
     setInputVal(val);
-    const matchedData = (await fetchData(val, 800)) as string[];
-    setMatchData(matchedData);
   }, []);
+
+  const getData = async (appendData: boolean) => {
+    setLoading(true);
+    try {
+      const matchedData = (await fetchData(
+        inputVal,
+        DEBOUNCE_TIME,
+        pageNumber.current
+      )) as UserDetails[];
+      console.log({ matchedData });
+      console.log({ inputVal });
+      if (appendData) {
+        setMatchData([...matchData, ...matchedData]);
+      } else {
+        setMatchData(matchedData);
+      }
+    } catch (error) {
+      setCustomError(() => "Something went wrong, please try again later");
+      setMatchData([]);
+      console.log("Error in getData:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  console.log("inputval on dom is: ", inputVal);
+
+  useEffect(() => {
+    pageNumber.current = 1;
+    getData(false);
+    setCustomError("");
+  }, [inputVal]);
+
+  useEffect(() => {
+    if (matchData.length == 0 && inputVal !== "" && !loading) {
+      setCustomError(() => {
+        console.log("input val is : ", inputVal);
+        return "Users with this username doesnt exist";
+      });
+    } else {
+      setCustomError("");
+    }
+  }, [matchData, inputVal, loading]);
 
   const clickedSuggestion = useCallback((e: any) => {
     const val = e.target.textContent;
@@ -88,22 +70,69 @@ export default function App() {
     console.log(val);
   }, []);
 
+  const attachIntersection = useCallback(
+    async (node: HTMLTableRowElement) => {
+      // console.log({ node });
+      if (loading) {
+        return;
+      }
+
+      if (intersectionRef.current) {
+        intersectionRef.current.disconnect();
+      }
+
+      intersectionRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          pageNumber.current += 1;
+          getData(true);
+        }
+      });
+
+      if (node) {
+        intersectionRef.current.observe(node);
+      }
+
+      return intersectionRef;
+    },
+    [loading, inputVal]
+  );
+
   return (
     <div className="App">
-      <input type="text" onChange={handleChange} value={inputVal} />
-      <table onClick={clickedSuggestion}>
+      <input
+        type="text"
+        onChange={handleChange}
+        value={inputVal}
+        placeholder="Enter Github User Name"
+      />
+      <table className={"tableStyle"} onClick={clickedSuggestion}>
         <tbody>
           {matchData.length
             ? matchData.map((row, ind) => {
                 return (
-                  <tr key={`${row}${ind}`}>
-                    <td>{row}</td>
+                  <tr
+                    key={`${row}${ind}`}
+                    ref={
+                      matchData.length - 1 === ind ? attachIntersection : null
+                    }
+                  >
+                    <td>{row.userName}</td>
+                    <td>
+                      <img
+                        src={row.avatar}
+                        width={"32px"}
+                        height={"32px"}
+                        alt=""
+                      />
+                    </td>
                   </tr>
                 );
               })
             : null}
         </tbody>
       </table>
+      {loading && <h3>{"LOADING....."}</h3>}
+      {customError !== "" && <h3 className={"customError"}>{customError}</h3>}
     </div>
   );
 }
