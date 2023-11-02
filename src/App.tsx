@@ -1,8 +1,6 @@
 import "./App.css";
 import { useEffect, useState, useCallback } from "react";
 
-const GITHUB_TOKEN = "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";
-
 interface JsonData {
   total_count: number;
   incomplete_results: boolean;
@@ -35,6 +33,10 @@ function searchUser() {
   let timeout: NodeJS.Timeout;
 
   return function (val: string, time: number) {
+    if (!val) {
+      return [];
+    }
+
     return new Promise(async (resolve, reject) => {
       if (timeout) {
         clearTimeout(timeout);
@@ -49,7 +51,7 @@ function searchUser() {
             `https://api.github.com/search/users?q=${val}&order=desc&sort=followers`,
             {
               headers: {
-                Authorization: `Bearer ${GITHUB_TOKEN}`,
+                Authorization: `Bearer ${process.env.REACT_APP_GITHUB_TOKEN}`,
               },
             }
           );
@@ -76,7 +78,7 @@ export default function App() {
     const val = e.target.value;
     // console.log("val is: ", val);
     setInputVal(val);
-    const matchedData = (await fetchData(val, 1500)) as string[];
+    const matchedData = (await fetchData(val, 800)) as string[];
     setMatchData(matchedData);
   }, []);
 
