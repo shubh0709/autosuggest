@@ -6,7 +6,7 @@ export function searchUser() {
 
   return function (val: string, time: number, pageNumber: number) {
     if (controller && controller.signal) {
-      console.log("aborting request");
+      //   console.log("aborting request");
       controller.abort();
     }
 
@@ -25,12 +25,12 @@ export function searchUser() {
       timeout = setTimeout(async () => {
         try {
           if (controller && controller?.signal?.aborted) {
-            console.log("came here got resolved early");
+            // console.log("came here got resolved early");
             resolve([]);
             return;
           }
 
-          console.log("came inside promise");
+          //   console.log("came inside promise");
 
           const data = await fetch(
             `https://api.github.com/search/users?q=${val}&order=desc&sort=followers&page=${pageNumber}`,
@@ -55,14 +55,14 @@ export function searchUser() {
           resolve(users);
         } catch (error) {
           if (controller && controller?.signal?.aborted === false) {
-            console.log("controller values: ");
-            console.log({ controller });
+            // console.log("controller values: ");
+            // console.log({ controller });
 
             reject(error);
           }
 
           resolve([]);
-          console.log("Error fetching data:", error);
+          //   console.log("Error fetching data:", error);
         }
       }, time);
     });

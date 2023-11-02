@@ -62,6 +62,7 @@ export default function App() {
         return "Users with this username doesnt exist";
       });
     } else {
+      setMoreDataToFetch(true);
       setCustomError("");
     }
   }, [matchData, inputVal, loading]);
