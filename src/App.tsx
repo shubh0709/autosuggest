@@ -14,6 +14,7 @@ export default function App() {
   const intersectionRef = useRef<IntersectionObserver>();
   const [loading, setLoading] = useState(false);
   const [customError, setCustomError] = useState("");
+  const [moreDataToFetch, setMoreDataToFetch] = useState(true);
 
   const handleChange = useCallback(async (e: any) => {
     const val = e.target.value;
@@ -29,8 +30,8 @@ export default function App() {
         DEBOUNCE_TIME,
         pageNumber.current
       )) as UserDetails[];
-      console.log({ matchedData });
-      console.log({ inputVal });
+      // console.log({ matchedData });
+      // console.log({ inputVal });
       if (appendData) {
         setMatchData([...matchData, ...matchedData]);
       } else {
@@ -39,13 +40,13 @@ export default function App() {
     } catch (error) {
       setCustomError(() => "Something went wrong, please try again later");
       setMatchData([]);
-      console.log("Error in getData:", error);
+      // console.log("Error in getData:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  console.log("inputval on dom is: ", inputVal);
+  // console.log("inputval on dom is: ", inputVal);
 
   useEffect(() => {
     pageNumber.current = 1;
@@ -55,8 +56,9 @@ export default function App() {
 
   useEffect(() => {
     if (matchData.length == 0 && inputVal !== "" && !loading) {
+      setMoreDataToFetch(false);
       setCustomError(() => {
-        console.log("input val is : ", inputVal);
+        // console.log("input val is : ", inputVal);
         return "Users with this username doesnt exist";
       });
     } else {
@@ -67,13 +69,13 @@ export default function App() {
   const clickedSuggestion = useCallback((e: any) => {
     const val = e.target.textContent;
     setInputVal(val);
-    console.log(val);
+    // console.log(val);
   }, []);
 
   const attachIntersection = useCallback(
     async (node: HTMLTableRowElement) => {
       // console.log({ node });
-      if (loading) {
+      if (loading || !moreDataToFetch) {
         return;
       }
 
@@ -89,7 +91,12 @@ export default function App() {
       });
 
       if (node) {
+        // console.log("node is present");
+        // console.log({ node });
         intersectionRef.current.observe(node);
+      } else {
+        // If there are no more data to fetch, disconnect the observer.
+        intersectionRef.current.disconnect();
       }
 
       return intersectionRef;
