@@ -32,6 +32,12 @@ export default function App() {
       )) as UserDetails[];
       // console.log({ matchedData });
       // console.log({ inputVal });
+      if (matchedData.length == 0) {
+        setMoreDataToFetch(false);
+      } else {
+        setMoreDataToFetch(true);
+      }
+
       if (appendData) {
         setMatchData([...matchData, ...matchedData]);
       } else {
@@ -56,13 +62,11 @@ export default function App() {
 
   useEffect(() => {
     if (matchData.length == 0 && inputVal !== "" && !loading) {
-      setMoreDataToFetch(false);
       setCustomError(() => {
         // console.log("input val is : ", inputVal);
         return "Users with this username doesnt exist";
       });
     } else {
-      setMoreDataToFetch(true);
       setCustomError("");
     }
   }, [matchData, inputVal, loading]);
